@@ -27,7 +27,7 @@ e.g. if you are creating typings for `chai@3.5.0`, then:
 ```js
 // typings.json
 {
-  "version": "1.8.0"
+  "chai": "3.5.0"
   // ...
 }
 ```
