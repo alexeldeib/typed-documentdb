@@ -1,0 +1,12 @@
+{
+  "name": "documentdb",
+  "main": "index.d.ts",
+  "homepage": "https://github.com/Azure/azure-documentdb-node#readme",
+  "version": "1.8.0",
+  "globalDevDependencies": {
+    "node": "registry:env/node#6.0.0+20160610031852"
+  },
+  "devDependencies": {
+    "blue-tape": "registry:npm/blue-tape#0.2.0+20160614064951"
+  }
+}
