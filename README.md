@@ -1,7 +1,8 @@
 # Typed Documentdb  [![Build Status](https://travis-ci.org/alexeldeib/typed-documentdb.svg?branch=master)](https://travis-ci.org/alexeldeib/typed-documentdb)
 
 
-The type definition for [`documentdb`](https://github.com/Azure/azure-documentdb-node.git)
+The type definition for [`documentdb`](https://github.com/Azure/azure-documentdb-node.git). This is an updated version of the type definitions from Definitely Typed.
+It is not yet complete, but has nearly all of the currently documented DocumentDB SDK typed, and is a significant improvement over the Definitely Typed typings. 
 
 ## LICENSE
 
@@ -27,7 +28,7 @@ e.g. if you are creating typings for `chai@3.5.0`, then:
 ```js
 // typings.json
 {
-  "version": "1.8.0"
+  "chai": "3.5.0"
   // ...
 }
 ```
