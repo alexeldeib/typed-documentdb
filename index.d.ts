@@ -940,3 +940,5 @@ declare namespace documentdb {
         public readConflicts(collectionLink: string): QueryIterator<AbstractMeta>; 
     }
 }
+
+export = documentdb;
