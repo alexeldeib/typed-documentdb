@@ -15,6 +15,16 @@ declare module 'documentdb' {
         sessionToken?: string;
     }
 
+    /** The media options.*/
+    interface MediaOptions {
+
+        /** HTTP Slug header value. */
+        slug?: string;
+
+        /** HTTP ContentType header value. */
+        contentType?: string;
+    }
+
     /** Options that can be specified for a request issued to the DocumentDB servers. */
     interface RequestOptions {
 
@@ -133,24 +143,91 @@ declare module 'documentdb' {
 
     }
 
-    /** Represents the meta data for a database. */
-    interface DatabaseMeta extends AbstractMeta {
+    /** Represents an offer in DocumentDB */
+    interface Offer extends AbstractMeta {
+    }
+
+    /** Represents an attachment in DocumentDB */
+    interface Attachment extends AbstractMeta {
+        /** Media link associated with the attachment */
+        media?: string;
+        /** The MIME type associated with the attachment content */
+        contentType?: string;
+    }
+
+    /** Represents an conflict in DocumentDB */
+    interface Conflict extends AbstractMeta {
+    }
+
+    /** For typing permissions */
+    enum PermissionMode {
+        "None",
+        "Read",
+        "All"
+    }
+
+    /** Represents a permission in DocumentDB */
+    interface Permission extends AbstractMeta, UniqueId {
+        /** The mode of the permission, must be a value of PermissionMode */
+        permissionMode: PermissionMode;
+        resource: string;
+    }
+
+    /** Represents a user in DocumentDB. */
+    interface User extends AbstractMeta, UniqueId {
+    }
+
+    /** Represents a udf in DocumentDB. */
+    interface UserDefinedFunction extends AbstractMeta, UniqueId {
+        /** The type of the udf, it should be one of the values of UserDefinedFunctionType */
+        userDefinedFunctionType: string;
+
+        /** Represents the body of the udf, it can be passed as stringified too. */
+        body(...params: any[]): void;
+    }
+
+    /** Represents the meta data for an attachment. */
+    interface AttachmentMeta extends AbstractMeta {
     }
 
     /** Represents the meta data for a collection. */
     interface CollectionMeta extends AbstractMeta {
     }
 
+    /** Represents an conflict in DocumentDB */
+    interface ConflictMeta extends AbstractMeta {
+    }
+
+    /** Represents the meta data for a database. */
+    interface DatabaseMeta extends AbstractMeta {
+    }
+
+     /** Represents the meta data for media. */
+    interface MediaMeta extends AbstractMeta {
+    }
+
+    /** Represents the meta data for an offer. */
+    interface OfferMeta extends AbstractMeta {
+    }
+
+    /** Represents the meta data for a permission. */
+    interface PermissionMeta extends AbstractMeta {
+    }
+
     /** Represents the meta data for a stored procedure. */
     interface ProcedureMeta extends AbstractMeta {
-        body: string;
+    }
+
+    /** Represents the meta data for a user. */
+    interface UserMeta extends AbstractMeta {
+    }
+
+    /** Represents the meta data for a udf. */
+    interface UserDefinedFunctionMeta extends AbstractMeta {
     }
     
     /** Represents the meta data for a trigger. */
     interface TriggerMeta extends AbstractMeta {
-        body: string;
-        triggerType: string;
-        triggerOperation: string;
     }
 
     /** An object that is used for authenticating requests and must contains one of the options. */
@@ -241,18 +318,30 @@ declare module 'documentdb' {
         */
         constructor(urlConnection: string, auth: AuthOptions, connectionPolicy?: any, consistencyLevel?: string);
 
-        /** Send a request for creating a database. 
+        /**
+         * Create an attachment.
          * <p>
-         *  A database manages users, permissions and a set of collections.  <br>
-         *  Each Azure DocumentDB Database Account is able to support multiple independent named databases, with the database being the logical container for data. <br>
-         *  Each Database consists of one or more collections, each of which in turn contain one or more documents. Since databases are an an administrative resource, the Service Master Key will be required in order to access and successfully complete any action using the User APIs. <br>
+         * Each document may contain zero or more attachments. Attachments can be of any MIME type - text, image, binary data. 
+         * These are stored externally in Azure Blob storage. Attachments are automatically deleted when the parent document is deleted.
          * </p>
-         * @param body      - A json object that represents The database to be created.
-         * @param [options] - The request options.
-         * @param callback  - The callback for the request.
-        */
-        public createDatabase(body: UniqueId, options: RequestOptions, callback: RequestCallback<DatabaseMeta>): void;
-        public createDatabase(body: UniqueId, callback: RequestCallback<DatabaseMeta>): void;
+         * @param documentLink    - The self-link of the document.
+         * @param attachment          - Represents the body of the attachment. Can contain any number of user defined properties.
+         * @param [options]         - The request options.
+         * @param callback 			- The callback for the request.
+         */
+        public createAttachment(documentSelfLink: string, attachment: Attachment, options: RequestOptions, callback: RequestCallback<AttachmentMeta>): void;
+        public createAttachment(documentSelfLink: string, attachment: Attachment, callback: RequestCallback<AttachmentMeta>): void;
+
+        /**
+         * Create an attachment (and upload it).
+         * 
+         * @param documentLink    - The self-link of the document.
+         * @param attachment          - Represents the body of the attachment. Can contain any number of user defined properties.
+         * @param [options]         - The request options.
+         * @param callback 			- The callback for the request.
+         */
+        public createAttachmentAndUploadMedia(documentSelfLink: string, attachment: Attachment, options: MediaOptions, callback: RequestCallback<AttachmentMeta>): void;
+        public createAttachmentAndUploadMedia(documentSelfLink: string, attachment: Attachment, callback: RequestCallback<AttachmentMeta>): void;
 
         /**
          * Creates a collection.
@@ -270,32 +359,18 @@ declare module 'documentdb' {
         public createCollection(databaseLink: string, body: Collection, options: RequestOptions, callback: RequestCallback<CollectionMeta>): void;
         public createCollection(databaseLink: string, body: Collection, callback: RequestCallback<CollectionMeta>): void;
 
-        /**
-         * Create a StoredProcedure.
+        /** Send a request for creating a database. 
          * <p>
-         * DocumentDB allows stored procedures to be executed in the storage tier, directly against a document collection. The script <br>
-         * gets executed under ACID transactions on the primary storage partition of the specified collection. For additional details, <br>
-         * refer to the server-side JavaScript API documentation. 
+         *  A database manages users, permissions and a set of collections.  <br>
+         *  Each Azure DocumentDB Database Account is able to support multiple independent named databases, with the database being the logical container for data. <br>
+         *  Each Database consists of one or more collections, each of which in turn contain one or more documents. Since databases are an an administrative resource, the Service Master Key will be required in order to access and successfully complete any action using the User APIs. <br>
          * </p>
-         * @param collectionLink    - The self-link of the collection.
-         * @param procedure         - Represents the body of the stored procedure.
-         * @param [options]         - The request options.
-         * @param callback          - The callback for the request.
-         */
-        public createStoredProcedure(collectionLink: string, procedure: Procedure, options: RequestOptions, callback: RequestCallback<ProcedureMeta>): void;
-        
-        /**
-         * Create a trigger.
-         * <p>
-         * DocumentDB supports pre and post triggers defined in JavaScript to be executed on creates, updates and deletes. <br>
-         * For additional details, refer to the server-side JavaScript API documentation.
-         * </p>
-         * @param collectionLink  - The self-link of the collection.
-         * @param trigger         - Represents the body of the trigger.
-         * @param [options]       - The request options.
-         * @param callback        - The callback for the request.
-         */
-        public createTrigger(collectionLink: string, trigger: Trigger, options: RequestOptions, callback: RequestCallback<TriggerMeta>): void;
+         * @param body      - A json object that represents The database to be created.
+         * @param [options] - The request options.
+         * @param callback  - The callback for the request.
+        */
+        public createDatabase(body: UniqueId, options: RequestOptions, callback: RequestCallback<DatabaseMeta>): void;
+        public createDatabase(body: UniqueId, callback: RequestCallback<DatabaseMeta>): void;
 
         /**
          * Create a document.
@@ -312,14 +387,174 @@ declare module 'documentdb' {
         public createDocument<TDocument>(collectionSelfLink: string, document: NewDocument<TDocument>, callback: RequestCallback<RetrievedDocument<TDocument>>): void;
 
         /**
+         * Create a Permission.
+         * <p>
+         * A permission represents a per-User Permission to access a specific resource e.g. Document or Collection. 
+         * </p>
+         * @param userLink    - The self-link of the user.
+         * @param permission         - Represents the body of the permission.
+         * @param [options]         - The request options.
+         * @param callback          - The callback for the request.
+         */
+        public createPermission(collectionLink: string, permission: Permission, options: RequestOptions, callback: RequestCallback<PermissionMeta>): void;
+        public createPermission(collectionLink: string, permission: Permission, callback: RequestCallback<PermissionMeta>): void;
+
+        /**
+         * Create a StoredProcedure.
+         * <p>
+         * DocumentDB allows stored procedures to be executed in the storage tier, directly against a document collection. The script <br>
+         * gets executed under ACID transactions on the primary storage partition of the specified collection. For additional details, <br>
+         * refer to the server-side JavaScript API documentation. 
+         * </p>
+         * @param collectionLink    - The self-link of the collection.
+         * @param procedure         - Represents the body of the stored procedure.
+         * @param [options]         - The request options.
+         * @param callback          - The callback for the request.
+         */
+        public createStoredProcedure(collectionLink: string, procedure: Procedure, options: RequestOptions, callback: RequestCallback<ProcedureMeta>): void;
+        public createStoredProcedure(collectionLink: string, procedure: Procedure, callback: RequestCallback<ProcedureMeta>): void;
+        
+        /**
+         * Create a trigger.
+         * <p>
+         * DocumentDB supports pre and post triggers defined in JavaScript to be executed on creates, updates and deletes. <br>
+         * For additional details, refer to the server-side JavaScript API documentation.
+         * </p>
+         * @param collectionLink  - The self-link of the collection.
+         * @param trigger         - Represents the body of the trigger.
+         * @param [options]       - The request options.
+         * @param callback        - The callback for the request.
+         */
+        public createTrigger(collectionLink: string, trigger: Trigger, options: RequestOptions, callback: RequestCallback<TriggerMeta>): void;
+        public createTrigger(collectionLink: string, trigger: Trigger, callback: RequestCallback<TriggerMeta>): void;
+
+        /**
+         * Create a database user.
+         * @param databaseLink  - The self-link of the database.
+         * @param user         - Represents the body of the user.
+         * @param [options]       - The request options.
+         * @param callback        - The callback for the request.
+         */
+        public createUser(databaseLink: string, user: User, options: RequestOptions, callback: RequestCallback<UserMeta>): void;
+        public createUser(databaseLink: string, user: User, callback: RequestCallback<UserMeta>): void;
+
+        /**
+         * Create a udf.
+         * <p>
+         * DocumentDB supports JavaScript UDFs which can be used inside queries, stored procedures and triggers.
+         * For additional details, refer to the server-side JavaScript API documentation. 
+         * </p>
+         * @param collectionLink  - The self-link of the collection.
+         * @param udf         - Represents the body of the udf.
+         * @param [options]       - The request options.
+         * @param callback        - The callback for the request.
+         */
+        public createUserDefinedFunction(collectionLink: string, udf: UserDefinedFunction, options: RequestOptions, callback: RequestCallback<UserDefinedFunctionMeta>): void;
+        public createUserDefinedFunction(collectionLink: string, udf: UserDefinedFunction, callback: RequestCallback<UserDefinedFunctionMeta>): void;
+
+        /**
+         * Delete the attachment object.
+         * @param attachmentLink    - The self-link of the attachment.
+         * @param [options]         - The request options.
+         * @param callback          - The callback for the request. 
+        */
+        public deleteAttachment(attachmentLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteAttachment(attachmentLink: string, callback: RequestCallback<void>): void;
+
+         /**
+         * Delete the collection object.
+         * @param collectionLink    - The self-link of the collection.
+         * @param [options]         - The request options.
+         * @param callback          - The callback for the request. 
+        */
+        public deleteCollection(collectionLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteCollection(collectionLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the Conflict object.
+         * @param ConflictLink    - The self-link of the Conflict.
+         * @param [options]         - The request options.
+         * @param callback          - The callback for the request. 
+        */
+        public deleteConflict(ConflictLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteConflict(ConflictLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the database object.
+         * @param databaseLink  - The self-link of the database.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request. 
+        */
+        public deleteDatabase(databaseLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteDatabase(databaseLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the document object.
+         * @param documentLink  - The self-link of the document.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request. 
+        */
+        public deleteDocument(documentLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteDocument(documentLink: string, callback: RequestCallback<void>): void;
+        
+        /**
+         * Delete the permission object.
+         * @param permissionLink  - The self-link of the permission.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request. 
+        */
+        public deletePermission(permissionLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deletePermission(permissionLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the StoredProcedure object.
+         * @param procedureLink - The self-link of the stored procedure.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request.
+        */
+        public deleteStoredProcedure(procedureLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteStoredProcedure(procedureLink: string, callback: RequestCallback<void>): void;
+        
+        /**
+         * Delete the trigger object.
+         * @param triggerLink - The self-link of the stored trigger.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request.
+        */
+        public deleteTrigger(triggerLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteTrigger(triggerLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the user object.
+         * @param userLink - The self-link of the stored user.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request.
+        */
+        public deleteUser(userLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteUser(userLink: string, callback: RequestCallback<void>): void;
+
+        /**
+         * Delete the udf object.
+         * @param udfLink - The self-link of the stored udf.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request.
+        */
+        public deleteUserDefinedFunction(udfLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
+        public deleteUserDefinedFunction(udfLink: string, callback: RequestCallback<void>): void;
+
+        /**
          * Execute the StoredProcedure represented by the object.
          * @param procedureLink - The self-link of the stored procedure.
          * @param [params]      - Represents the parameters of the stored procedure.
          * @param callback      - The callback for the request.
          */
+        public executeStoredProcedure<TDocument>(procedureLink: string, callback: RequestCallback<TDocument>): void;
         public executeStoredProcedure<TDocument>(procedureLink: string, params: any[], callback: RequestCallback<TDocument>): void;
+        public executeStoredProcedure<TDocument>(procedureLink: string, options: RequestOptions, callback: RequestCallback<TDocument>): void;
+        public executeStoredProcedure<TDocument>(procedureLink: string, params: any[], options: RequestOptions, callback: RequestCallback<TDocument>): void;
 
-        /** Lists all databases that satisfy a query. 
+        /** 
+         * Lists all databases that satisfy a query. 
          * @param query     - A SQL query string.
          * @param [options] - The feed options.
          * @returns         - An instance of QueryIterator to handle reading feed.
@@ -363,38 +598,25 @@ declare module 'documentdb' {
         public queryTriggers(collectionLink: string, query: string | SqlQuerySpec, options?: FeedOptions): QueryIterator<TriggerMeta>;
         
         /**
-         * Delete the document object.
-         * @param documentLink  - The self-link of the document.
-         * @param [options]     - The request options.
-         * @param callback      - The callback for the request. 
-        */
-        public deleteDocument(documentLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
-        public deleteDocument(documentLink: string, callback: RequestCallback<void>): void;
-
-        /**
-         * Delete the database object.
-         * @param databaseLink  - The self-link of the database.
-         * @param [options]     - The request options.
-         * @param callback      - The callback for the request. 
-        */
-        public deleteDatabase(databaseLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
-
-        /**
-         * Delete the collection object.
-         * @param collectionLink    - The self-link of the collection.
-         * @param [options]         - The request options.
-         * @param callback          - The callback for the request. 
-        */
-        public deleteCollection(collectionLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
-
-        /**
-         * Delete the StoredProcedure object.
-         * @param procedureLink - The self-link of the stored procedure.
+         * Replace the attachment object.
+         * @param attachmentLink - The self-link of the attachment.
+         * @param attachment     - Represent the new attachment body.
          * @param [options]     - The request options.
          * @param callback      - The callback for the request.
-        */
-        public deleteStoredProcedure(procedureLink: string, options: RequestOptions, callback: RequestCallback<void>): void;
-        
+         */
+        public replaceAttachment(attachmentLink: string, attachment: Attachment, options: RequestOptions, callback: RequestCallback<AttachmentMeta>): void;
+        public replaceAttachment(attachmentLink: string, attachment: Attachment, callback: RequestCallback<AttachmentMeta>): void;
+
+         /**
+         * Replace the collection object.
+         * @param collectionLink - The self-link of the document collection.
+         * @param collection     - Represent the new document collection body.
+         * @param [options]     - The request options.
+         * @param callback      - The callback for the request.
+         */
+        public replaceCollection(collectionLink: string, collection: Collection, options: RequestOptions, callback: RequestCallback<CollectionMeta>): void;
+        public replaceCollection(collectionLink: string, collection: Collection, callback: RequestCallback<CollectionMeta>): void;
+
         /**
          * Replace the document object.
          * @param {string} documentLink      - The self-link of the document.
@@ -403,8 +625,27 @@ declare module 'documentdb' {
          * @param {RequestCallback} callback - The callback for the request.
          */
         public replaceDocument<TDocument>(documentLink: string, document: NewDocument<TDocument>, options: RequestOptions, callback: RequestCallback<RetrievedDocument<TDocument>>): void;
-        
+        public replaceDocument<TDocument>(documentLink: string, document: NewDocument<TDocument>, callback: RequestCallback<RetrievedDocument<TDocument>>): void;
+
         /**
+         * Replace the offer object.
+         * @param {string} offerLink      - The self-link of the offer.
+         * @param {object} offer          - Represent the new offer body.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public replaceOffer(offerLink: string, offer: Offer, callback: RequestCallback<Offer>): void;
+
+        /**
+         * Replace the permission object.
+         * @param {string} permissionLink      - The self-link of the permission.
+         * @param {object} permission          - Represent the new permission body.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public replacePermission(permissionLink: string, permission: Permission, options: RequestOptions, callback: RequestCallback<Permission>): void;
+        public replacePermission(permissionLink: string, permission: Permission, callback: RequestCallback<Permission>): void;
+
+         /**
          * Replace the StoredProcedure object.
          * @param procedureLink - The self-link of the stored procedure.
          * @param procedure     - Represent the new procedure body.
@@ -412,7 +653,59 @@ declare module 'documentdb' {
          * @param callback      - The callback for the request.
          */
         public replaceStoredProcedure(procedureLink: string, procedure: Procedure, options: RequestOptions, callback: RequestCallback<ProcedureMeta>): void;
-        
+        public replaceStoredProcedure(procedureLink: string, procedure: Procedure, callback: RequestCallback<ProcedureMeta>): void;
+
+        /**
+         * Replace the trigger object.
+         * @param {string} triggerLink      - The self-link of the trigger.
+         * @param {object} trigger          - Represent the new trigger body.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public replaceTrigger(triggerLink: string, trigger: Trigger, options: RequestOptions, callback: RequestCallback<Trigger>): void;
+        public replacetrigger(TriggerLink: string, trigger: Trigger, callback: RequestCallback<Trigger>): void;
+
+        /**
+         * Replace the user object.
+         * @param {string} userLink      - The self-link of the user.
+         * @param {object} user          - Represent the new user body.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public replaceUser(userLink: string, user: User, options: RequestOptions, callback: RequestCallback<UserMeta>): void;
+        public replaceUser(userLink: string, user: User, callback: RequestCallback<UserMeta>): void;
+
+        /**
+         * Replace the udf object.
+         * @memberof DocumentClient
+         * @instance
+         * @param {string} udfLink           - The self-link of the user defined function.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public replaceUserDefinedFunction(udfLink: string, udf: UserDefinedFunction, options: RequestOptions, callback: RequestCallback<UserDefinedFunctionMeta>): void; 
+        public replaceUserDefinedFunction(udfLink: string, udf: UserDefinedFunction, callback: RequestCallback<UserDefinedFunctionMeta>): void; 
+
+        /**
+         * Update the media object.
+         * @param {string} mediaLink      - The self-link of the media in the attachment.
+         * @param {object} readableStream          - The stream that represents the media itself that needs to be uploaded.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public updateMedia(mediaLink: string, readableStream: any, options: MediaOptions, callback: RequestCallback<MediaMeta>): void;
+        public updateMedia(mediaLink: string, readableStream: any, callback: RequestCallback<MediaMeta>): void;
+
+        /**
+         * Reads an Attachment object.
+         * @memberof DocumentClient
+         * @instance
+         * @param {string} attachmentLink    - The self-link of the attachment.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+        */
+        public readAttachment(attachmentLink: string, options: RequestOptions, callback: RequestCallback<AttachmentMeta>): void; 
+        public readAttachment(attachmentLink: string, callback: RequestCallback<AttachmentMeta>): void;
+
         /** Reads a database.
          * @memberof DocumentClient
          * @instance
@@ -420,8 +713,8 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options]    - The request options.
          * @param {RequestCallback} callback    - The callback for the request.
         */
-        public readDatabase(databaseLink, options, callback): void;
-        public readDatabase(databaseLink, callback): void;
+        public readDatabase(databaseLink: string, options: RequestOptions, callback: RequestCallback<DatabaseMeta>): void;
+        public readDatabase(databaseLink: string, callback: RequestCallback<DatabaseMeta>): void;
 
         /**
          * Reads a collection.
@@ -431,8 +724,8 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options]    - The request options.
          * @param {RequestCallback} callback    - The callback for the request.
          */
-        public readCollection(collectionLink, options, callback): void; 
-        public readCollection(collectionLink, callback): void; 
+        public readCollection(collectionLink: string, options: RequestOptions, callback: RequestCallback<CollectionMeta>): void; 
+        public readCollection(collectionLink: string, callback: RequestCallback<CollectionMeta>): void; 
 
         /**
          * Reads a document.
@@ -442,29 +735,26 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options]    - The request options.
          * @param {RequestCallback} callback    - The callback for the request.
          */
-        public readDocument(documentLink, options, callback): void; 
-        public readDocument(documentLink, callback): void; 
-       
+        public readDocument<TDocument>(documentLink: string, options: RequestOptions, callback: RequestCallback<RetrievedDocument<TDocument>>): void;
+        public readDocument<TDocument>(documentLink: string, callback: RequestCallback<RetrievedDocument<TDocument>>): void;
+
         /**
-         * Reads an Attachment object.
+         * Reads media.
          * @memberof DocumentClient
          * @instance
-         * @param {string} attachmentLink    - The self-link of the attachment.
-         * @param {RequestOptions} [options] - The request options.
-         * @param {RequestCallback} callback - The callback for the request.
-        */
-        public readAttachment(attachmentLink, options, callback): void; 
-        public readAttachment(attachmentLink, callback): void;
-        /**
-         * Reads a user.
-         * @memberof DocumentClient
-         * @instance
-         * @param {string} userLink          - The self-link of the user.
-         * @param {RequestOptions} [options] - The request options.
+         * @param {string} mediaLink          - The self-link of the media.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readUser(userLink, options, callback): void; 
-        public readUser(userLink, callback): void; 
+        public readMedia(mediaLink: string, callback: RequestCallback<MediaMeta>): void;
+
+        /**
+         * Reads an offer.
+         * @memberof DocumentClient
+         * @instance
+         * @param {string} offerLink          - The self-link of the offer.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public readOffer(offerLink: string, callback: RequestCallback<OfferMeta>): void;
 
         /**
          * Reads a permission.
@@ -474,8 +764,19 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options] - The request options.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readPermission(permissionLink, options, callback): void; 
-        public readPermission(permissionLink, callback): void; 
+        public readPermission(permissionLink: string, options: RequestOptions, callback: RequestCallback<PermissionMeta>): void; 
+        public readPermission(permissionLink: string, callback: RequestCallback<PermissionMeta>): void;
+
+        /**
+         * Reads a user.
+         * @memberof DocumentClient
+         * @instance
+         * @param {string} userLink          - The self-link of the user.
+         * @param {RequestOptions} [options] - The request options.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public readUser(userLink: string, options: RequestOptions, callback: RequestCallback<UserMeta>): void;
+        public readUser(userLink: string, callback: RequestCallback<UserMeta>): void;
         
         /**
          * Reads a trigger object.
@@ -485,8 +786,8 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options] - The request options.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readTrigger(triggerLink, options, callback): void; 
-        public readTrigger(triggerLink, callback): void; 
+        public readTrigger(triggerLink: string, options: RequestOptions, callback: RequestCallback<TriggerMeta>): void; 
+        public readTrigger(triggerLink: string, callback: RequestCallback<TriggerMeta>): void; 
         
         /**
          * Reads a udf object.
@@ -496,8 +797,9 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options] - The request options.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readUserDefinedFunction(udfLink, options, callback): void; 
-        
+        public readUserDefinedFunction(udfLink: string, options: RequestOptions, callback: RequestCallback<UserDefinedFunctionMeta>): void; 
+        public readUserDefinedFunction(udfLink: string, callback: RequestCallback<UserDefinedFunctionMeta>): void; 
+
         /**
          * Reads a StoredProcedure object.
          * @memberof DocumentClient
@@ -506,8 +808,9 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options] - The request options.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readStoredProcedure(sprocLink, options, callback): void; 
-        
+        public readStoredProcedure(sprocLink: string, options: RequestOptions, callback: RequestCallback<ProcedureMeta>): void; 
+        public readStoredProcedure(sprocLink: string, callback: RequestCallback<ProcedureMeta>): void; 
+
         /**
          * Reads a conflict.
          * @memberof DocumentClient
@@ -516,16 +819,18 @@ declare module 'documentdb' {
          * @param {RequestOptions} [options] - The request options.
          * @param {RequestCallback} callback - The callback for the request.
          */
-        public readConflict(conflictLink, options, callback): void; 
-        
+        public readConflict(conflictLink: string, options: RequestOptions, callback: RequestCallback<ConflictMeta>): void; 
+        public readConflict(conflictLink: string, callback: RequestCallback<ConflictMeta>): void; 
+
         /** Lists all databases.
          * @memberof DocumentClient
          * @instance
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
         */
-        public readDatabases(options): void; 
-        
+        public readDatabases(options: FeedOptions): QueryIterator<DatabaseMeta>; 
+        public readDatabases(): QueryIterator<DatabaseMeta>; 
+
         /**
          * Get all collections in this database.
          * @memberof DocumentClient
@@ -534,7 +839,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
          */
-        public readCollections(databaseLink, options): void; 
+        public readCollections(databaseLink: string, options: FeedOptions): QueryIterator<CollectionMeta>; 
+        public readCollections(databaseLink: string): QueryIterator<CollectionMeta>; 
         
         /**
          * Get all documents in this collection.
@@ -544,7 +850,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
          */
-        public readDocuments(collectionLink, options): void; 
+        public readDocuments<TDocument>(collectionLink: string, options: FeedOptions): QueryIterator<RetrievedDocument<TDocument>>; 
+        public readDocuments<TDocument>(collectionLink: string): QueryIterator<RetrievedDocument<TDocument>>; 
         
         /**
         * Get all attachments for this document.
@@ -554,7 +861,8 @@ declare module 'documentdb' {
         * @param {FeedOptions} [options] - The feed options.
         * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
        */
-        public readAttachments(documentLink, options): void; 
+        public readAttachments(documentLink: string, options: FeedOptions): QueryIterator<AttachmentMeta>; 
+        public readAttachments(documentLink: string): QueryIterator<AttachmentMeta>; 
         
         /**
          * Get all users in this database.
@@ -564,8 +872,18 @@ declare module 'documentdb' {
          * @param {FeedOptions} [feedOptions] - The feed options.
          * @returns {QueryIterator}           - An instance of queryIterator to handle reading feed.
          */
-        public readUsers(databaseLink, options): void; 
+        public readUsers(databaseLink: string, options: FeedOptions): QueryIterator<UserMeta>; 
+        public readUsers(databaseLink: string): QueryIterator<UserMeta>; 
         
+        /**
+         * Reads an offer.
+         * @memberof DocumentClient
+         * @instance
+         * @param {string} offerLink          - The self-link of the offer.
+         * @param {RequestCallback} callback - The callback for the request.
+         */
+        public readOffers(options: FeedOptions): void;
+
         /**
          * Get all permissions for this user.
          * @memberof DocumentClient
@@ -574,7 +892,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [feedOptions] - The feed options.
          * @returns {QueryIterator}           - An instance of queryIterator to handle reading feed.
          */
-        public readPermissions(userLink, options): void; 
+        public readPermissions(userLink: string, options: FeedOptions): QueryIterator<PermissionMeta>; 
+        public readPermissions(userLink: string): QueryIterator<PermissionMeta>; 
         
         /**
          * Get all triggers in this collection.
@@ -584,7 +903,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options]   - The feed options.
          * @returns {QueryIterator}         - An instance of queryIterator to handle reading feed.
          */
-        public readTriggers(collectionLink, options): void; 
+        public readTriggers(collectionLink: string, options: FeedOptions): QueryIterator<TriggerMeta>; 
+        public readTriggers(collectionLink: string): QueryIterator<TriggerMeta>; 
         
         /**
          * Get all UserDefinedFunctions in this collection.
@@ -594,7 +914,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
          */
-        public readUserDefinedFunctions(collectionLink, options): void; 
+        public readUserDefinedFunctions(collectionLink: string, options: FeedOptions): QueryIterator<UserDefinedFunctionMeta>; 
+        public readUserDefinedFunctions(collectionLink: string): QueryIterator<UserDefinedFunctionMeta>; 
         
         /**
          * Get all StoredProcedures in this collection.
@@ -604,7 +925,8 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
          */
-        public readStoredProcedures(collectionLink, options): void; 
+        public readStoredProcedures(collectionLink: string, options: FeedOptions): QueryIterator<ProcedureMeta>; 
+        public readStoredProcedures(collectionLink: string): QueryIterator<ProcedureMeta>; 
         
         /**
          * Get all conflicts in this collection.
@@ -614,6 +936,7 @@ declare module 'documentdb' {
          * @param {FeedOptions} [options] - The feed options.
          * @returns {QueryIterator}       - An instance of QueryIterator to handle reading feed.
          */
-        public readConflicts(collectionLink, options): void; 
+        public readConflicts(collectionLink: string, options: FeedOptions): QueryIterator<AbstractMeta>; 
+        public readConflicts(collectionLink: string): QueryIterator<AbstractMeta>; 
     }
 }
